@@ -1,0 +1,1169 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Passenger Dashboard — YATRA_SATHI</title>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@600;700&family=Nunito:wght@400;600;700&display=swap"
+        rel="stylesheet" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css" />
+    <style>
+        *,
+        *::before,
+        *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Nunito', sans-serif;
+            min-height: 100vh;
+            background: #fff;
+            background-image:
+                radial-gradient(ellipse 80% 60% at 20% 10%, #eef2ff 0%, transparent 60%),
+                radial-gradient(ellipse 60% 50% at 80% 90%, #fff0f2 0%, transparent 60%);
+            animation: bgShift 8s ease-in-out infinite alternate;
+            color: #1a1a2e;
+        }
+
+        @keyframes bgShift {
+            0% {
+                background-image: radial-gradient(ellipse 80% 60% at 20% 10%, #eef2ff 0%, transparent 60%), radial-gradient(ellipse 60% 50% at 80% 90%, #fff0f2 0%, transparent 60%);
+            }
+
+            100% {
+                background-image: radial-gradient(ellipse 80% 60% at 50% 80%, #f0f8ff 0%, transparent 60%), radial-gradient(ellipse 60% 50% at 30% 20%, #fff0f5 0%, transparent 60%);
+            }
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background-image: radial-gradient(circle, #c8c8d8 1px, transparent 1px);
+            background-size: 36px 36px;
+            opacity: 0.18;
+            z-index: 0;
+            pointer-events: none;
+        }
+
+        /* TOPBAR */
+        .topbar {
+            position: sticky;
+            top: 0;
+            z-index: 50;
+            background: rgba(255, 255, 255, 0.82);
+            backdrop-filter: blur(16px);
+            border-bottom: 1px solid rgba(200, 210, 255, 0.4);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px 28px;
+        }
+
+        .logo-area {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .logo-img {
+            width: 42px;
+            height: 42px;
+            border-radius: 10px;
+            background: #fff;
+            padding: 3px;
+            box-shadow: 0 2px 10px rgba(100, 120, 200, 0.12);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .logo-img img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
+
+        .brand {
+            font-family: 'Rajdhani', sans-serif;
+            font-size: 1.15rem;
+            font-weight: 700;
+            letter-spacing: 0.07em;
+            color: #1a1a2e;
+        }
+
+        .brand span {
+            color: #cc0000;
+        }
+
+        .topbar-right {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .welcome-text {
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: #4a4a6a;
+        }
+
+        .welcome-text strong {
+            color: #cc0000;
+        }
+
+        .logout-btn {
+            background: none;
+            border: 1.5px solid #d0d4f0;
+            border-radius: 10px;
+            padding: 6px 14px;
+            font-family: 'Nunito', sans-serif;
+            font-size: 0.8rem;
+            font-weight: 700;
+            color: #4a4a6a;
+            cursor: pointer;
+            transition: border-color 0.2s, color 0.2s;
+        }
+
+        .logout-btn:hover {
+            border-color: #cc0000;
+            color: #cc0000;
+        }
+
+        /* PAGE */
+        .page {
+            position: relative;
+            z-index: 1;
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 28px 24px 60px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        /* CARD */
+        .card {
+            background: rgba(255, 255, 255, 0.72);
+            border: 1px solid rgba(200, 210, 255, 0.45);
+            border-radius: 20px;
+            padding: 24px 26px;
+            backdrop-filter: blur(16px);
+            box-shadow: 0 2px 16px rgba(100, 120, 200, 0.08);
+            animation: fadeUp 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
+        }
+
+        @keyframes fadeUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .card-label {
+            font-size: 0.70rem;
+            font-weight: 700;
+            letter-spacing: 0.15em;
+            text-transform: uppercase;
+            color: #9090b0;
+            margin-bottom: 16px;
+        }
+
+        /* ROUTE SELECTOR */
+        .route-selectors {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+            margin-bottom: 16px;
+        }
+
+        .sel-group label {
+            display: block;
+            font-size: 0.75rem;
+            font-weight: 700;
+            letter-spacing: 0.10em;
+            text-transform: uppercase;
+            color: #4a4a6a;
+            margin-bottom: 7px;
+        }
+
+        .sel-group select {
+            width: 100%;
+            padding: 12px 14px;
+            border: 1.5px solid #d0d4f0;
+            border-radius: 12px;
+            font-family: 'Nunito', sans-serif;
+            font-size: 0.95rem;
+            font-weight: 600;
+            color: #1a1a2e;
+            background: rgba(255, 255, 255, 0.9);
+            outline: none;
+            cursor: pointer;
+            transition: border-color 0.2s, box-shadow 0.2s;
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%239090b0' stroke-width='2' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 14px center;
+            padding-right: 36px;
+        }
+
+        .sel-group select:focus {
+            border-color: #1a3aff;
+            box-shadow: 0 0 0 3px rgba(26, 58, 255, 0.09);
+        }
+
+        .search-btn {
+            width: 100%;
+            height: 48px;
+            border-radius: 13px;
+            border: 2.5px solid #1a3aff;
+            background: #cc0000;
+            color: #fff;
+            font-family: 'Rajdhani', sans-serif;
+            font-size: 1.05rem;
+            font-weight: 700;
+            letter-spacing: 0.08em;
+            cursor: pointer;
+            transition: transform 0.18s, box-shadow 0.18s, background 0.2s;
+        }
+
+        .search-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 22px rgba(204, 0, 0, 0.25);
+            background: #aa0000;
+        }
+
+        /* FARE BADGE */
+        .fare-badge {
+            display: none;
+            margin-top: 14px;
+            background: rgba(0, 160, 80, 0.07);
+            border: 1.5px solid rgba(0, 160, 80, 0.22);
+            border-radius: 14px;
+            padding: 14px 18px;
+            display: none;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        .fare-badge.show {
+            display: flex;
+        }
+
+        .fare-info {
+            display: flex;
+            flex-direction: column;
+            gap: 3px;
+        }
+
+        .fare-label {
+            font-size: 0.72rem;
+            font-weight: 700;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            color: #007a3d;
+        }
+
+        .fare-value {
+            font-family: 'Rajdhani', sans-serif;
+            font-size: 1.6rem;
+            font-weight: 700;
+            color: #1a1a2e;
+            line-height: 1;
+        }
+
+        .fare-sub {
+            font-size: 0.75rem;
+            color: #7a7a9a;
+            font-weight: 600;
+        }
+
+        .stops-badge {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            font-size: 0.82rem;
+            color: #4a4a6a;
+            font-weight: 600;
+        }
+
+        .stop-tag {
+            background: rgba(26, 58, 255, 0.07);
+            border: 1px solid rgba(26, 58, 255, 0.15);
+            border-radius: 8px;
+            padding: 4px 10px;
+            font-size: 0.78rem;
+            font-weight: 700;
+            color: #1a3aff;
+        }
+
+        .stop-tag.green {
+            background: rgba(0, 160, 80, 0.07);
+            border-color: rgba(0, 160, 80, 0.2);
+            color: #007a3d;
+        }
+
+        /* MAP */
+        #passengerMap {
+            width: 100%;
+            height: 340px;
+            border-radius: 14px;
+            overflow: hidden;
+            border: 1px solid rgba(200, 210, 255, 0.5);
+        }
+
+        .leaflet-popup-content-wrapper {
+            border-radius: 10px !important;
+            font-family: 'Nunito', sans-serif;
+            font-size: 0.85rem;
+        }
+
+        .popup-title {
+            font-weight: 700;
+            color: #1a1a2e;
+            margin-bottom: 2px;
+        }
+
+        .popup-sub {
+            font-size: 0.76rem;
+            color: #7a7a9a;
+        }
+
+        /* BUS LIST */
+        .bus-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .bus-item {
+            background: rgba(255, 255, 255, 0.80);
+            border: 1.5px solid rgba(200, 210, 255, 0.5);
+            border-radius: 16px;
+            padding: 16px 20px;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            flex-wrap: wrap;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+
+        .bus-item:hover {
+            border-color: rgba(26, 58, 255, 0.3);
+            box-shadow: 0 4px 16px rgba(100, 120, 200, 0.10);
+        }
+
+        .bus-avatar {
+            width: 48px;
+            height: 48px;
+            border-radius: 12px;
+            background: linear-gradient(135deg, #cc0000, #ff4444);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.4rem;
+            flex-shrink: 0;
+        }
+
+        .bus-info {
+            flex: 1;
+            min-width: 160px;
+        }
+
+        .bus-no {
+            font-family: 'Rajdhani', sans-serif;
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: #1a1a2e;
+        }
+
+        .bus-driver {
+            font-size: 0.80rem;
+            color: #7a7a9a;
+            font-weight: 600;
+            margin-top: 2px;
+        }
+
+        .bus-meta {
+            display: flex;
+            gap: 8px;
+            margin-top: 6px;
+            flex-wrap: wrap;
+        }
+
+        .bus-tag {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            background: rgba(26, 58, 255, 0.06);
+            border: 1px solid rgba(26, 58, 255, 0.14);
+            border-radius: 7px;
+            padding: 3px 8px;
+            font-size: 0.73rem;
+            font-weight: 700;
+            color: #1a3aff;
+        }
+
+        .bus-tag.green {
+            background: rgba(0, 160, 80, 0.07);
+            border-color: rgba(0, 160, 80, 0.2);
+            color: #007a3d;
+        }
+
+        .bus-tag.orange {
+            background: rgba(240, 160, 0, 0.07);
+            border-color: rgba(240, 160, 0, 0.25);
+            color: #a06000;
+        }
+
+        .bus-rating {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 2px;
+        }
+
+        .bus-stars {
+            color: #f5a623;
+            font-size: 0.75rem;
+        }
+
+        .bus-rating-num {
+            font-family: 'Rajdhani', sans-serif;
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: #1a1a2e;
+        }
+
+        .track-btn {
+            padding: 10px 20px;
+            border-radius: 11px;
+            border: 2.5px solid #1a3aff;
+            background: #cc0000;
+            color: #fff;
+            font-family: 'Rajdhani', sans-serif;
+            font-size: 0.95rem;
+            font-weight: 700;
+            letter-spacing: 0.06em;
+            cursor: pointer;
+            transition: transform 0.18s, box-shadow 0.18s;
+            white-space: nowrap;
+        }
+
+        .track-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 18px rgba(204, 0, 0, 0.25);
+        }
+
+        .no-buses {
+            text-align: center;
+            padding: 28px;
+            color: #9090b0;
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+
+        /* TRACKING PANEL */
+        .track-panel {
+            display: none;
+        }
+
+        .track-panel.show {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .track-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 4px;
+        }
+
+        .track-title {
+            font-family: 'Rajdhani', sans-serif;
+            font-size: 1.3rem;
+            font-weight: 700;
+            color: #1a1a2e;
+        }
+
+        .close-track {
+            background: none;
+            border: 1.5px solid #d0d4f0;
+            border-radius: 10px;
+            padding: 6px 14px;
+            font-family: 'Nunito', sans-serif;
+            font-size: 0.8rem;
+            font-weight: 700;
+            color: #4a4a6a;
+            cursor: pointer;
+        }
+
+        .close-track:hover {
+            border-color: #cc0000;
+            color: #cc0000;
+        }
+
+        /* Bus detail grid */
+        .detail-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+            gap: 12px;
+        }
+
+        .detail-item {
+            background: rgba(255, 255, 255, 0.8);
+            border: 1px solid rgba(200, 210, 255, 0.4);
+            border-radius: 14px;
+            padding: 14px 16px;
+        }
+
+        .detail-label {
+            font-size: 0.68rem;
+            font-weight: 700;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            color: #9090b0;
+            margin-bottom: 4px;
+        }
+
+        .detail-value {
+            font-family: 'Rajdhani', sans-serif;
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: #1a1a2e;
+        }
+
+        .detail-value.small {
+            font-size: 0.88rem;
+            font-family: 'Nunito', sans-serif;
+        }
+
+        /* Board / Exit buttons */
+        .action-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 14px;
+        }
+
+        .action-btn {
+            height: 58px;
+            border-radius: 14px;
+            border: 2.5px solid;
+            font-family: 'Rajdhani', sans-serif;
+            font-size: 1.05rem;
+            font-weight: 700;
+            letter-spacing: 0.07em;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            transition: transform 0.18s, box-shadow 0.18s;
+        }
+
+        .action-btn:hover {
+            transform: translateY(-2px);
+        }
+
+        .btn-board {
+            background: #00a050;
+            border-color: #007a3d;
+            color: #fff;
+            box-shadow: 0 4px 14px rgba(0, 160, 80, 0.18);
+        }
+
+        .btn-board:hover {
+            box-shadow: 0 6px 22px rgba(0, 160, 80, 0.30);
+        }
+
+        .btn-exit {
+            background: #cc0000;
+            border-color: #1a3aff;
+            color: #fff;
+            box-shadow: 0 4px 14px rgba(204, 0, 0, 0.18);
+        }
+
+        .btn-exit:hover {
+            box-shadow: 0 6px 22px rgba(204, 0, 0, 0.28);
+        }
+
+        .btn-board.active {
+            background: #007a3d;
+            animation: activePulse 1.5s ease-in-out infinite;
+        }
+
+        .btn-exit.active {
+            background: #aa0000;
+            animation: activePulse 1.5s ease-in-out infinite;
+        }
+
+        @keyframes activePulse {
+
+            0%,
+            100% {
+                box-shadow: 0 0 0 0 rgba(0, 160, 80, 0.3);
+            }
+
+            50% {
+                box-shadow: 0 0 0 8px rgba(0, 160, 80, 0);
+            }
+        }
+
+        /* Track map */
+        #trackMap {
+            width: 100%;
+            height: 360px;
+            border-radius: 14px;
+            overflow: hidden;
+            border: 1px solid rgba(200, 210, 255, 0.5);
+        }
+
+        /* TOAST */
+        .toast {
+            position: fixed;
+            bottom: 28px;
+            left: 50%;
+            transform: translateX(-50%) translateY(80px);
+            background: #1a1a2e;
+            color: #fff;
+            padding: 12px 24px;
+            border-radius: 12px;
+            font-size: 0.88rem;
+            font-weight: 600;
+            z-index: 200;
+            transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+            white-space: nowrap;
+        }
+
+        .toast.show {
+            transform: translateX(-50%) translateY(0);
+        }
+
+        @media(max-width:600px) {
+            .route-selectors {
+                grid-template-columns: 1fr;
+            }
+
+            .action-row {
+                grid-template-columns: 1fr;
+            }
+
+            .page {
+                padding: 16px 12px 60px;
+            }
+
+            .topbar {
+                padding: 10px 14px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- Topbar -->
+    <div class="topbar">
+        <div class="logo-area">
+            <div class="logo-img"><img id="logoImg" alt="Logo" /></div>
+            <div class="brand">YATRA<span>_</span>SATHI</div>
+        </div>
+        <div class="topbar-right">
+            <div class="welcome-text">Welcome, <strong id="passengerName">Passenger</strong></div>
+            <button class="logout-btn" onclick="logout()">Logout</button>
+        </div>
+    </div>
+
+    <div class="page">
+
+        <!-- Route Selector + Map -->
+        <div class="card" style="animation-delay:0.05s">
+            <div class="card-label">Plan Your Journey</div>
+            <div class="route-selectors">
+                <div class="sel-group">
+                    <label>From (Boarding Stop)</label>
+                    <select id="fromStop" onchange="updateToStops()">
+                        <option value="">-- Select boarding stop --</option>
+                    </select>
+                </div>
+                <div class="sel-group">
+                    <label>To (Exit Stop)</label>
+                    <select id="toStop">
+                        <option value="">-- Select exit stop --</option>
+                    </select>
+                </div>
+            </div>
+            <button class="search-btn" onclick="searchBuses()">🔍 Search Buses</button>
+
+            <!-- Fare info -->
+            <div class="fare-badge" id="fareBadge">
+                <div class="fare-info">
+                    <div class="fare-label">Estimated Fare</div>
+                    <div class="fare-value" id="fareValue">NPR 0</div>
+                    <div class="fare-sub" id="fareSub">Based on route distance</div>
+                </div>
+                <div class="stops-badge">
+                    <div class="stop-tag green" id="fromTag">—</div>
+                    <span>→</span>
+                    <div class="stop-tag green" id="toTag">—</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Route Map -->
+        <div class="card" style="animation-delay:0.10s">
+            <div class="card-label">Route Map</div>
+            <div id="passengerMap"></div>
+        </div>
+
+        <!-- Bus List -->
+        <div class="card" style="animation-delay:0.15s" id="busListCard">
+            <div class="card-label">Available Buses</div>
+            <div class="bus-list" id="busList">
+                <div class="no-buses">Select your boarding and exit stops, then tap Search Buses.</div>
+            </div>
+        </div>
+
+        <!-- Tracking Panel -->
+        <div class="track-panel" id="trackPanel">
+
+            <!-- Bus Details -->
+            <div class="card" style="animation-delay:0.05s">
+                <div class="track-header">
+                    <div class="track-title" id="trackTitle">Tracking Bus</div>
+                    <button class="close-track" onclick="closeTracking()">✕ Stop Tracking</button>
+                </div>
+                <div class="card-label">Bus Details</div>
+                <div class="detail-grid" id="detailGrid"></div>
+            </div>
+
+            <!-- Board / Exit -->
+            <div class="card" style="animation-delay:0.08s">
+                <div class="card-label">My Journey Actions</div>
+                <div style="display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap;">
+                    <div
+                        style="flex:1;min-width:140px;background:rgba(0,160,80,0.06);border:1px solid rgba(0,160,80,0.18);border-radius:12px;padding:12px 14px;">
+                        <div
+                            style="font-size:0.70rem;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:#007a3d;">
+                            Boarding At</div>
+                        <div style="font-family:'Rajdhani',sans-serif;font-size:1.15rem;font-weight:700;color:#1a1a2e;margin-top:2px;"
+                            id="boardingStopLabel">—</div>
+                    </div>
+                    <div
+                        style="flex:1;min-width:140px;background:rgba(204,0,0,0.05);border:1px solid rgba(204,0,0,0.16);border-radius:12px;padding:12px 14px;">
+                        <div
+                            style="font-size:0.70rem;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:#cc0000;">
+                            Exiting At</div>
+                        <div style="font-family:'Rajdhani',sans-serif;font-size:1.15rem;font-weight:700;color:#1a1a2e;margin-top:2px;"
+                            id="exitStopLabel">—</div>
+                    </div>
+                </div>
+                <div class="action-row">
+                    <button class="action-btn btn-board" id="boardBtn" onclick="toggleBoard()">🟢 Board Bus</button>
+                    <button class="action-btn btn-exit" id="exitBtn" onclick="toggleExit()">🔴 Exit Bus</button>
+                </div>
+            </div>
+
+            <!-- Track Map -->
+            <div class="card" style="animation-delay:0.11s">
+                <div class="card-label">Live Route Tracking</div>
+                <div id="trackMap"></div>
+            </div>
+
+        </div>
+
+    </div>
+
+    <div class="toast" id="toast"></div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+    <script>
+        // ── Logo ─────────────────────────────────────────────────────────
+        document.getElementById('logoImg').src = 'data:image/png;base64,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TtyjpWvdUOpJWxNZ9IuLDgDzyvQAwpWdvLyaEtsFHKXdHeLQzvwdW1de0RnAiulMZCB5OeM4968nUmodyt4K+kpZ6aouZgJ7mnpKbhjYTyLjjl7yVfWWKORvC9jXN9ThkJHFHG3hjY1g9TRhaPSEt1Hcz9Q3s5bGmdG7QVVn2Fu2jpZom3i7wvlneHZY2UgcDc+ocIBPtVY9K3nWG0euHVgtbqavjY6CWnq4jwyMJGR4eIGCF+gq+csEUuO8iY/HMcTQcKMK7WcrOSUqKeMbYKT7jzbnbo6edrC72n5PaLYWtpoYoXNDzI4AlgOS/oMu6Lc/YwpKqj25ukVXTywPN1c4NkYWkjuo+fNb0DQBjAUgALiVbVHTg5jSxLVkp12vNE3mk3An1ZT0U09suEUZfNGwubFIxgYWux0yGgj2rs7MbybhXLUemtIkUs1vbNDTSyNpCZe5GB6Ts46DrhW7c0OGCAR5r5w00EOe6hjjz14WgZXPXpx0tHHUtS1JlRu2TbLjWbmUUtLQ1M7BbIwXRxOcM8cnLkFYHs/wy0+zWmYZ43xSNo8OY9uCPSd1CzwtBU4CjKrqgo45E408Scu8ov2jrRdKje/UM9PbquWJ0sPC9kLiD8zH4gKxm+1NUT9nipp4YJJJjRUo4GtJdnijzyW2+EKcLl1s6duRFUsZ35lV+xTbq+j1Nf3VdFUU7XUkQBljLQTxH1q1KgADopUKk9csk6cNCwERFAmEREAREQBERAEREAREQBERAEREAREQBERAEREAREQBERAEREAREQBERAEREAREQBERAEREAREQBERAEREAREQBERAEREAREQBERAEREAREQBERAEREAREQBERAEREAREQBERAEREAREQBERAEREAREQBERAEREAREQBERAEREAREQBERAEREAREQBERAEREAREQBERAEREAREQBERAEREAREQBERAEREAREQH/2Q==';
+
+        // ── Passenger ────────────────────────────────────────────────────
+        var pax = JSON.parse(localStorage.getItem('ys_passenger') || '{"name":"Passenger"}');
+        document.getElementById('passengerName').textContent = pax.name.split(' ')[0];
+
+        // ── All stops with coordinates ────────────────────────────────────
+        var stopCoords = {
+            "Kathmandu": [27.7172, 85.3240],
+            "Naubise": [27.6870, 84.9630],
+            "Mugling": [27.8670, 84.5290],
+            "Dumre": [27.9530, 84.3870],
+            "Pokhara": [28.2096, 83.9856],
+            "Narayanghat": [27.7025, 84.4317],
+            "Bharatpur": [27.6813, 84.4320],
+            "Butwal": [27.7006, 83.4483],
+            "Dhulikhel": [27.6228, 85.5456],
+            "Sindhuli": [27.2624, 85.9708],
+            "Bardibas": [26.9738, 85.9213],
+            "Itahari": [26.6625, 87.2742],
+            "Biratnagar": [26.4525, 87.2718],
+            "Dharan": [26.8120, 87.2836],
+            "Ratnapark": [27.7051, 85.3140],
+            "Jamal": [27.7083, 85.3178],
+            "Putalisadak": [27.6991, 85.3246],
+            "Thapathali": [27.6940, 85.3190],
+            "Tripureshwor": [27.6962, 85.3095],
+            "Kalanki": [27.6938, 85.2795],
+            "Koteshwor": [27.6778, 85.3468],
+            "Tinkune": [27.6881, 85.3417],
+            "Airport": [27.6966, 85.3591],
+            "Gaushala": [27.7100, 85.3394],
+            "Chabahil": [27.7184, 85.3468],
+            "Jawalakhel": [27.6763, 85.3125],
+            "Pulchowk": [27.6820, 85.3178],
+            "Sundarijal": [27.7760, 85.4030],
+            "Lagankhel": [27.6653, 85.3143],
+            "Maharajgunj": [27.7355, 85.3280],
+            "Chakrapath": [27.7448, 85.3195],
+            "Tokha": [27.7648, 85.3093],
+            "Budhanilkantha": [27.7934, 85.3618],
+            "Gongabu": [27.7370, 85.3095],
+            "Kalimati": [27.6993, 85.2997],
+            "Satdobato": [27.6555, 85.3231],
+            "Balkhu": [27.6860, 85.2962]
+        };
+
+        // ── Bus / Driver data (mirrors driver-login.html) ─────────────────
+        var buses = [
+            { code: "DRV-001", name: "Ram Bahadur Thapa", busNo: "Ba 1 Kha 2345", route: "Kathmandu → Pokhara", type: "Long Route", stops: ["Kathmandu", "Naubise", "Mugling", "Dumre", "Pokhara"], rating: 4.8, reviews: 124, trips: 312, experience: "6 years", status: "On Duty", phone: "980-1234001" },
+            { code: "DRV-002", name: "Sita Kumari Shrestha", busNo: "Ba 2 Kha 3456", route: "Kathmandu → Chitwan", type: "Long Route", stops: ["Kathmandu", "Naubise", "Mugling", "Narayanghat", "Bharatpur"], rating: 4.5, reviews: 98, trips: 245, experience: "4 years", status: "On Duty", phone: "980-1234002" },
+            { code: "DRV-003", name: "Suresh Rai", busNo: "Ba 3 Kha 4567", route: "Kathmandu → Butwal", type: "Long Route", stops: ["Kathmandu", "Naubise", "Mugling", "Narayanghat", "Butwal"], rating: 4.3, reviews: 76, trips: 198, experience: "7 years", status: "On Duty", phone: "980-1234003" },
+            { code: "DRV-004", name: "Dipak Karki", busNo: "Ba 4 Kha 5678", route: "Kathmandu → Biratnagar", type: "Long Route", stops: ["Kathmandu", "Dhulikhel", "Sindhuli", "Bardibas", "Itahari", "Biratnagar"], rating: 4.1, reviews: 61, trips: 155, experience: "2 years", status: "On Break", phone: "980-1234004" },
+            { code: "DRV-005", name: "Arjun Oli", busNo: "Ba 5 Kha 6789", route: "Kathmandu → Dharan", type: "Long Route", stops: ["Kathmandu", "Dhulikhel", "Sindhuli", "Bardibas", "Itahari", "Dharan"], rating: 4.4, reviews: 88, trips: 221, experience: "5 years", status: "Off Duty", phone: "980-1234005" },
+            { code: "DRV-006", name: "Bikash Tamang", busNo: "Ba 6 Kha 7890", route: "Ratnapark → Kalanki", type: "City Route", stops: ["Ratnapark", "Jamal", "Putalisadak", "Thapathali", "Tripureshwor", "Kalanki"], rating: 4.2, reviews: 210, trips: 890, experience: "3 years", status: "On Duty", phone: "980-1234006" },
+            { code: "DRV-007", name: "Priya Maharjan", busNo: "Ba 7 Kha 8901", route: "Koteshwor → Chabahil", type: "City Route", stops: ["Koteshwor", "Tinkune", "Airport", "Gaushala", "Chabahil"], rating: 4.7, reviews: 187, trips: 743, experience: "5 years", status: "On Duty", phone: "980-1234007" },
+            { code: "DRV-008", name: "Mina Lama", busNo: "Ba 8 Kha 9012", route: "Ratnapark → Budhanilkantha", type: "City Route", stops: ["Ratnapark", "Maharajgunj", "Chakrapath", "Tokha", "Budhanilkantha"], rating: 4.9, reviews: 298, trips: 1102, experience: "8 years", status: "On Duty", phone: "980-1234008" },
+            { code: "DRV-009", name: "Anita Gurung", busNo: "Ba 9 Kha 0123", route: "Lagankhel → Sundarijal", type: "City Route", stops: ["Lagankhel", "Jawalakhel", "Pulchowk", "Ratnapark", "Chabahil", "Sundarijal"], rating: 4.6, reviews: 153, trips: 612, experience: "4 years", status: "On Duty", phone: "980-1234009" },
+            { code: "DRV-010", name: "Kamala Devi Adhikari", busNo: "Ba 10 Kha 1234", route: "Gongabu → Balkhu", type: "City Route", stops: ["Gongabu", "Kalimati", "Kalanki", "Satdobato", "Balkhu"], rating: 4.0, reviews: 134, trips: 501, experience: "3 years", status: "On Break", phone: "980-1234010" }
+        ];
+
+        // ── Fare table (NPR per stop segment) ─────────────────────────────
+        var farePerStop = {
+            "Long Route": 80,
+            "City Route": 25
+        };
+
+        // ── Collect all unique stops ──────────────────────────────────────
+        var allStops = [];
+        buses.forEach(function (b) {
+            b.stops.forEach(function (s) {
+                if (allStops.indexOf(s) === -1) allStops.push(s);
+            });
+        });
+
+        // Populate FROM dropdown
+        var fromSel = document.getElementById('fromStop');
+        allStops.forEach(function (s) {
+            var o = document.createElement('option');
+            o.value = s; o.textContent = s;
+            fromSel.appendChild(o);
+        });
+
+        function updateToStops() {
+            var from = document.getElementById('fromStop').value;
+            var toSel = document.getElementById('toStop');
+            toSel.innerHTML = '<option value="">-- Select exit stop --</option>';
+            if (!from) return;
+            // Find all stops that come AFTER the from stop in any bus route
+            var possible = [];
+            buses.forEach(function (b) {
+                var idx = b.stops.indexOf(from);
+                if (idx !== -1) {
+                    b.stops.slice(idx + 1).forEach(function (s) {
+                        if (possible.indexOf(s) === -1) possible.push(s);
+                    });
+                }
+            });
+            possible.forEach(function (s) {
+                var o = document.createElement('option');
+                o.value = s; o.textContent = s;
+                toSel.appendChild(o);
+            });
+            updateRouteMap(from, null);
+        }
+
+        // ── State ─────────────────────────────────────────────────────────
+        var selectedFrom = '', selectedTo = '';
+        var trackedBus = null;
+        var boarded = false, exited = false;
+
+        // ── Passenger Map ─────────────────────────────────────────────────
+        var pMap, pRoute, pMarkers = [];
+        window.addEventListener('load', function () {
+            pMap = L.map('passengerMap', { zoomControl: true, scrollWheelZoom: false });
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '© OpenStreetMap', maxZoom: 18 }).addTo(pMap);
+            pMap.setView([27.72, 85.32], 12);
+        });
+
+        function updateRouteMap(from, to) {
+            if (pRoute) pMap.removeLayer(pRoute);
+            pMarkers.forEach(function (m) { pMap.removeLayer(m); }); pMarkers = [];
+
+            if (!from) return;
+
+            // Find matching bus stops
+            var matchBus = null;
+            buses.forEach(function (b) {
+                if (b.stops.indexOf(from) !== -1 && (!to || b.stops.indexOf(to) !== -1)) {
+                    if (!matchBus) matchBus = b;
+                }
+            });
+            if (!matchBus) return;
+
+            var fromIdx = matchBus.stops.indexOf(from);
+            var toIdx = to ? matchBus.stops.indexOf(to) : matchBus.stops.length - 1;
+
+            var allCoords = matchBus.stops.map(function (s) { return stopCoords[s]; }).filter(Boolean);
+            pRoute = L.polyline(allCoords, { color: '#c8c8d8', weight: 3, opacity: 0.6 }).addTo(pMap);
+
+            // Highlight segment
+            var segCoords = matchBus.stops.slice(fromIdx, toIdx + 1).map(function (s) { return stopCoords[s]; }).filter(Boolean);
+            if (segCoords.length > 1) {
+                L.polyline(segCoords, { color: '#00a050', weight: 4, opacity: 0.85 }).addTo(pMap);
+            }
+
+            matchBus.stops.forEach(function (stop, i) {
+                var coord = stopCoords[stop]; if (!coord) return;
+                var color, label, popSub;
+                if (stop === from) { color = '#00a050'; label = 'B'; popSub = 'Your Boarding Stop'; }
+                else if (stop === to) { color = '#cc0000'; label = 'E'; popSub = 'Your Exit Stop'; }
+                else if (i >= fromIdx && i <= toIdx) { color = '#1a3aff'; label = String(i + 1); popSub = 'On your route'; }
+                else { color = '#c0c0c0'; label = String(i + 1); popSub = 'Outside your route'; }
+                var icon = L.divIcon({
+                    className: '',
+                    html: '<div style="width:28px;height:28px;border-radius:50%;background:' + color + ';border:3px solid #fff;box-shadow:0 2px 8px rgba(0,0,0,0.2);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:#fff;">' + label + '</div>',
+                    iconSize: [28, 28], iconAnchor: [14, 14], popupAnchor: [0, -16]
+                });
+                var m = L.marker(coord, { icon: icon }).addTo(pMap)
+                    .bindPopup('<div class="popup-title">' + stop + '</div><div class="popup-sub">' + popSub + '</div>');
+                pMarkers.push(m);
+            });
+
+            var bounds = segCoords.length > 1 ? L.latLngBounds(segCoords) : L.latLngBounds(allCoords);
+            pMap.fitBounds(bounds, { padding: [30, 30] });
+        }
+
+        // ── Search buses ─────────────────────────────────────────────────
+        function searchBuses() {
+            selectedFrom = document.getElementById('fromStop').value;
+            selectedTo = document.getElementById('toStop').value;
+            if (!selectedFrom || !selectedTo) { showToast('Please select both boarding and exit stops.'); return; }
+
+            updateRouteMap(selectedFrom, selectedTo);
+
+            // Filter matching buses
+            var matched = buses.filter(function (b) {
+                var fi = b.stops.indexOf(selectedFrom);
+                var ti = b.stops.indexOf(selectedTo);
+                return fi !== -1 && ti !== -1 && fi < ti;
+            });
+
+            // Calculate fare
+            var fareEl = document.getElementById('fareBadge');
+            if (matched.length > 0) {
+                var b0 = matched[0];
+                var fi = b0.stops.indexOf(selectedFrom);
+                var ti = b0.stops.indexOf(selectedTo);
+                var numStops = ti - fi;
+                var perStop = farePerStop[b0.type] || 30;
+                var fare = numStops * perStop;
+                document.getElementById('fareValue').textContent = 'NPR ' + fare;
+                document.getElementById('fareSub').textContent = numStops + ' stop' + (numStops > 1 ? 's' : '') + ' · ' + b0.type;
+                document.getElementById('fromTag').textContent = selectedFrom;
+                document.getElementById('toTag').textContent = selectedTo;
+                fareEl.classList.add('show');
+            } else {
+                fareEl.classList.remove('show');
+            }
+
+            // Render bus list
+            var list = document.getElementById('busList');
+            list.innerHTML = '';
+            if (matched.length === 0) {
+                list.innerHTML = '<div class="no-buses">No buses found for this route. Try different stops.</div>';
+                return;
+            }
+
+            matched.forEach(function (b) {
+                var stars = '★'.repeat(Math.round(b.rating)) + '☆'.repeat(5 - Math.round(b.rating));
+                var statusClass = b.status === 'On Duty' ? 'green' : b.status === 'On Break' ? 'orange' : '';
+                var item = document.createElement('div');
+                item.className = 'bus-item';
+                item.innerHTML =
+                    '<div class="bus-avatar">🚌</div>' +
+                    '<div class="bus-info">' +
+                    '<div class="bus-no">' + b.busNo + '</div>' +
+                    '<div class="bus-driver">Driver: ' + b.name + ' · ' + b.code + '</div>' +
+                    '<div class="bus-meta">' +
+                    '<div class="bus-tag">🛣️ ' + b.route + '</div>' +
+                    '<div class="bus-tag ' + statusClass + '">● ' + b.status + '</div>' +
+                    '</div>' +
+                    '</div>' +
+                    '<div class="bus-rating">' +
+                    '<div class="bus-stars">' + stars + '</div>' +
+                    '<div class="bus-rating-num">' + b.rating.toFixed(1) + '</div>' +
+                    '</div>' +
+                    '<button class="track-btn" onclick="trackBus(\'' + b.code + '\')">📍 Track</button>';
+                list.appendChild(item);
+            });
+        }
+
+        // ── Track Map ─────────────────────────────────────────────────────
+        var tMap, tRoute, tMarkers = [];
+
+        function trackBus(code) {
+            trackedBus = buses.find(function (b) { return b.code === code; });
+            if (!trackedBus) return;
+
+            boarded = false; exited = false;
+            document.getElementById('boardBtn').textContent = '🟢 Board Bus';
+            document.getElementById('boardBtn').classList.remove('active');
+            document.getElementById('exitBtn').textContent = '🔴 Exit Bus';
+            document.getElementById('exitBtn').classList.remove('active');
+
+            document.getElementById('trackTitle').textContent = 'Tracking · ' + trackedBus.busNo;
+            document.getElementById('boardingStopLabel').textContent = selectedFrom;
+            document.getElementById('exitStopLabel').textContent = selectedTo;
+
+            // Detail grid
+            var grid = document.getElementById('detailGrid');
+            var details = [
+                { label: 'Bus Number', value: trackedBus.busNo },
+                { label: 'Driver', value: trackedBus.name },
+                { label: 'Driver Code', value: trackedBus.code },
+                { label: 'Route', value: trackedBus.route, small: true },
+                { label: 'Route Type', value: trackedBus.type },
+                { label: 'Status', value: trackedBus.status },
+                { label: 'Rating', value: trackedBus.rating.toFixed(1) + ' ★' },
+                { label: 'Total Trips', value: trackedBus.trips },
+                { label: 'Experience', value: trackedBus.experience },
+                { label: 'Contact', value: trackedBus.phone, small: true }
+            ];
+            grid.innerHTML = '';
+            details.forEach(function (d) {
+                var el = document.createElement('div');
+                el.className = 'detail-item';
+                el.innerHTML = '<div class="detail-label">' + d.label + '</div><div class="detail-value' + (d.small ? ' small' : '') + '">' + d.value + '</div>';
+                grid.appendChild(el);
+            });
+
+            // Show panel
+            document.getElementById('trackPanel').classList.add('show');
+            document.getElementById('trackPanel').scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+            // Init track map
+            setTimeout(function () {
+                if (!tMap) {
+                    tMap = L.map('trackMap', { zoomControl: true, scrollWheelZoom: false });
+                    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '© OpenStreetMap', maxZoom: 18 }).addTo(tMap);
+                }
+                renderTrackMap();
+            }, 300);
+        }
+
+        function renderTrackMap() {
+            if (!tMap || !trackedBus) return;
+            if (tRoute) tMap.removeLayer(tRoute);
+            tMarkers.forEach(function (m) { tMap.removeLayer(m); }); tMarkers = [];
+
+            var allCoords = trackedBus.stops.map(function (s) { return stopCoords[s]; }).filter(Boolean);
+            tRoute = L.polyline(allCoords, { color: '#c0c0d0', weight: 3, opacity: 0.5, dashArray: '6,4' }).addTo(tMap);
+
+            // Highlight passenger segment green
+            var fi = trackedBus.stops.indexOf(selectedFrom);
+            var ti = trackedBus.stops.indexOf(selectedTo);
+            if (fi !== -1 && ti !== -1) {
+                var seg = trackedBus.stops.slice(fi, ti + 1).map(function (s) { return stopCoords[s]; }).filter(Boolean);
+                L.polyline(seg, { color: '#00a050', weight: 5, opacity: 0.85 }).addTo(tMap);
+            }
+
+            trackedBus.stops.forEach(function (stop, i) {
+                var coord = stopCoords[stop]; if (!coord) return;
+                var color, label, popSub;
+                if (stop === selectedFrom) { color = '#00a050'; label = 'B'; popSub = 'Your Boarding Stop'; }
+                else if (stop === selectedTo) { color = '#cc0000'; label = 'E'; popSub = 'Your Exit Stop'; }
+                else if (fi !== -1 && ti !== -1 && i > fi && i < ti) { color = '#1a3aff'; label = String(i + 1); popSub = 'On your journey'; }
+                else { color = '#9090b0'; label = String(i + 1); popSub = 'Bus stop'; }
+                var icon = L.divIcon({
+                    className: '',
+                    html: '<div style="width:30px;height:30px;border-radius:50%;background:' + color + ';border:3px solid #fff;box-shadow:0 2px 8px rgba(0,0,0,0.22);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#fff;">' + label + '</div>',
+                    iconSize: [30, 30], iconAnchor: [15, 15], popupAnchor: [0, -18]
+                });
+                var m = L.marker(coord, { icon: icon }).addTo(tMap)
+                    .bindPopup('<div class="popup-title">' + stop + '</div><div class="popup-sub">' + popSub + ' · Stop ' + (i + 1) + ' of ' + trackedBus.stops.length + '</div>');
+                tMarkers.push(m);
+            });
+
+            tMap.fitBounds(L.latLngBounds(allCoords), { padding: [28, 28] });
+        }
+
+        function closeTracking() {
+            document.getElementById('trackPanel').classList.remove('show');
+            trackedBus = null; boarded = false; exited = false;
+            showToast('Stopped tracking.');
+        }
+
+        // ── Board / Exit ──────────────────────────────────────────────────
+        function toggleBoard() {
+            boarded = !boarded;
+            var btn = document.getElementById('boardBtn');
+            if (boarded) {
+                btn.textContent = '✅ Boarded at ' + selectedFrom;
+                btn.classList.add('active');
+                showToast('You have boarded at ' + selectedFrom + ' 🚌');
+            } else {
+                btn.textContent = '🟢 Board Bus';
+                btn.classList.remove('active');
+                showToast('Boarding cancelled.');
+            }
+        }
+
+        function toggleExit() {
+            exited = !exited;
+            var btn = document.getElementById('exitBtn');
+            if (exited) {
+                btn.textContent = '✅ Exited at ' + selectedTo;
+                btn.classList.add('active');
+                showToast('You have exited at ' + selectedTo + ' 👋 Safe travels!');
+            } else {
+                btn.textContent = '🔴 Exit Bus';
+                btn.classList.remove('active');
+                showToast('Exit cancelled.');
+            }
+        }
+
+        // ── Toast ─────────────────────────────────────────────────────────
+        var toastTimer;
+        function showToast(msg) {
+            var t = document.getElementById('toast');
+            t.textContent = msg;
+            t.classList.add('show');
+            clearTimeout(toastTimer);
+            toastTimer = setTimeout(function () { t.classList.remove('show'); }, 3000);
+        }
+
+        function logout() {
+            localStorage.removeItem('ys_passenger');
+            window.location.href = 'passenger-login.html';
+        }
+    </script>
+</body>
+
+</html>
