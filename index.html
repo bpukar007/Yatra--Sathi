@@ -325,17 +325,42 @@
             background-image: url('passenger.jpg');
         }
 
-        .tag {
+        /* Flying logo overlay for button click */
+        .fly-logo {
             position: fixed;
-            bottom: 16px;
-            left: 50%;
-            transform: translateX(-50%);
-            z-index: 10;
-            font-size: 0.70rem;
-            letter-spacing: 0.18em;
-            color: #aaaacc;
-            text-transform: uppercase;
-            white-space: nowrap;
+            z-index: 999;
+            background: #fff;
+            border-radius: 20px;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 6px;
+            box-shadow: 0 4px 20px rgba(100, 120, 200, 0.14);
+            pointer-events: none;
+            transition: top 0.7s cubic-bezier(0.4, 0, 0.2, 1),
+                left 0.7s cubic-bezier(0.4, 0, 0.2, 1),
+                width 0.7s cubic-bezier(0.4, 0, 0.2, 1),
+                height 0.7s cubic-bezier(0.4, 0, 0.2, 1),
+                border-radius 0.7s ease,
+                opacity 0.3s ease 0.6s;
+        }
+
+        .fly-logo img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
+
+        .fly-logo.gone {
+            opacity: 0;
+        }
+
+        /* Card fade out on click */
+        .card.exit {
+            opacity: 0 !important;
+            transform: scale(0.96) translateY(10px) !important;
+            transition: opacity 0.45s ease, transform 0.45s ease !important;
         }
 
         @media (max-width: 480px) {
@@ -476,11 +501,40 @@
         }, 4200);
 
         function selectRole(role) {
-            if (role === 'driver') {
-                window.location.href = 'driver-login.html';
-            } else {
-                window.location.href = 'passenger-login.html';
-            }
+            var dest = role === 'driver' ? 'driver-login.html' : 'passenger-login.html';
+
+            // 1. Get card logo's current position & size
+            var cardLogoEl = document.getElementById('cardLogo');
+            var rect = cardLogoEl.getBoundingClientRect();
+
+            // 2. Create a flying clone of the logo at the exact same position
+            var flyEl = document.createElement('div');
+            flyEl.className = 'fly-logo';
+            flyEl.style.top = rect.top + 'px';
+            flyEl.style.left = rect.left + 'px';
+            flyEl.style.width = rect.width + 'px';
+            flyEl.style.height = rect.height + 'px';
+            flyEl.innerHTML = cardLogoEl.innerHTML;
+            document.body.appendChild(flyEl);
+
+            // 3. Fade out the card
+            document.getElementById('mainCard').classList.add('exit');
+
+            // 4. After a tiny frame, fly the logo to top-left (topbar position)
+            requestAnimationFrame(function () {
+                requestAnimationFrame(function () {
+                    flyEl.style.top = '14px';
+                    flyEl.style.left = '20px';
+                    flyEl.style.width = '46px';
+                    flyEl.style.height = '46px';
+                    flyEl.style.borderRadius = '10px';
+                });
+            });
+
+            // 5. Navigate after animation completes
+            setTimeout(function () {
+                window.location.href = dest;
+            }, 850);
         }
     </script>
 </body>
